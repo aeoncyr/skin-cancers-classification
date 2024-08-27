@@ -1,4 +1,4 @@
-# Skin Cancer Detection Project
+# Skin Cancer Detection Project -- On progress
 This is a pilot project for research on skin cancer risk factors assessment application. The model is trained using the HAM-10000 dataset from ISIC by Philipp Tschandl.
 
 This project is a machine learning application aimed at detecting different types of skin cancer using image data. The model is trained on the HAM10000 dataset, a collection of dermatoscopic images of common pigmented skin lesions. It leverages a Convolutional Neural Network (CNN) to classify skin lesions into various diagnostic categories.
