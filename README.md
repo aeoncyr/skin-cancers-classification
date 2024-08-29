@@ -46,7 +46,7 @@ The project uses the **HAM10000** dataset, which contains dermatoscopic images o
 - Vascular lesions
 - Dermatofibroma
 
-The dataset is available for download from [Kaggle](https://www.kaggle.com/kmader/skin-cancer-mnist-ham10000).
+The dataset is available for download from [ISIC Archive](https://api.isic-archive.com/collections/212/) or [Kaggle](https://www.kaggle.com/kmader/skin-cancer-mnist-ham10000) (Take note that there is difference in metadata).
 
 ## Usage
 
