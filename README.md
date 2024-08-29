@@ -48,7 +48,8 @@ The project uses the **HAM10000** dataset, which contains dermatoscopic images o
 
 The dataset is available for download from [ISIC Archive](https://api.isic-archive.com/collections/212/) or [Kaggle](https://www.kaggle.com/kmader/skin-cancer-mnist-ham10000) (Take note that there is difference in metadata).
 
-Note from dataset owner:
+**Note from dataset owner:**
+
 Attribution should be made by referencing the data descriptor manuscript: Tschandl, P., Rosendahl, C. & Kittler, H. The HAM10000 dataset, a large collection of multi-source dermatoscopic images of common pigmented skin lesions. Sci. Data 5, 180161 doi:10.1038/sdata.2018.161 (2018)
 
 ## Usage
