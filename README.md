@@ -1,82 +1,57 @@
-# Skin Cancer Detection Project -- On progress
-This is a pilot project for research on skin cancer risk factors assessment application. The model is trained using the HAM-10000 dataset from ISIC by Philipp Tschandl.
+# Skin Cancer Detection Project
 
-This project is a machine learning application aimed at detecting different types of skin cancer using image data. The model is trained on the HAM10000 dataset, a collection of dermatoscopic images of common pigmented skin lesions. It leverages a Convolutional Neural Network (CNN) to classify skin lesions into various diagnostic categories.
+This project is a machine learning application aimed at detecting different types of skin cancer using image data. It assumes the HAM10000 dataset is present.
 
-## Project Overview
+## Project Structure
 
-- **Data Understanding:** The `dataUnderstanding.py` script performs initial data exploration, visualization, and analysis of the HAM10000 dataset, helping to understand the distribution of skin cancer types.
-  
-- **Model Training:** The `modelTraining.py` script handles the preprocessing of images, data augmentation, model architecture definition, and training of a CNN model to classify skin cancer lesions.
+The project has been restructured for better maintainability:
 
-## Features
-
-- **Data Augmentation:** Random flips, rotations, and zooms are applied to the images to enhance model generalization.
-- **Model Architecture:** A CNN built with TensorFlow/Keras, including layers like Convolution, MaxPooling, Dropout, and Dense layers for classification.
-- **Early Stopping & Learning Rate Scheduler:** These callbacks help improve training efficiency by avoiding overfitting and adjusting the learning rate dynamically.
-- **Evaluation & Visualization:** The training history and performance metrics are visualized to assess model accuracy and loss over epochs.
+- `src/skin_cancer_detection/`: The main Python package containing the source code.
+    - `config.py`: Configuration constants.
+    - `data.py`: Data loading and preprocessing logic.
+    - `model.py`: Model architecture definition (CNN with MobileNetV2).
+    - `train.py`: Training loop and evaluation.
+    - `visualization.py`: Functions for data exploration and result plotting.
+- `scripts/`: Entry points for running analysis and training.
+    - `run_analysis.py`: Runs data understanding visualizations.
+    - `train_model.py`: Trains the model.
+- `notebooks/`: Jupyter notebooks for experimentation.
+    - `dataUnderstanding.ipynb`: Original data analysis notebook.
+    - `modelTraining.ipynb`: Original model training notebook.
 
 ## Installation
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/aeoncyr/skinCancerDetection.git
-   cd skinCancerDetection
-   ```
-
-2. Set up a virtual environment (optional but recommended):
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. Install the required Python packages:
+1. Clone the repository.
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-
-## Dataset
-
-The project uses the **HAM10000** dataset, which contains dermatoscopic images of various types of skin lesions. The dataset includes the following lesion types:
-- Melanocytic nevi
-- Melanoma
-- Benign keratosis-like lesions
-- Basal cell carcinoma
-- Actinic keratoses
-- Vascular lesions
-- Dermatofibroma
-
-The dataset is available for download from [ISIC Archive](https://api.isic-archive.com/collections/212/) or [Kaggle](https://www.kaggle.com/kmader/skin-cancer-mnist-ham10000) (Take note that there is difference in metadata).
-
-**Note from dataset owner:**
-
-Attribution should be made by referencing the data descriptor manuscript: Tschandl, P., Rosendahl, C. & Kittler, H. The HAM10000 dataset, a large collection of multi-source dermatoscopic images of common pigmented skin lesions. Sci. Data 5, 180161 doi:10.1038/sdata.2018.161 (2018)
+   (Note: Ensure you have `tensorflow`, `pandas`, `matplotlib`, `seaborn`, `scikit-learn` installed if not in `requirements.txt`)
 
 ## Usage
 
-1. **Data Understanding:**
-   Run the `dataUnderstanding.py` script to explore and visualize the dataset:
-   ```bash
-   python dataUnderstanding.py
-   ```
+### 1. Data Understanding / Analysis
 
-2. **Model Training:**
-   Run the `modelTraining.py` script to preprocess the data, train the model, and evaluate its performance:
-   ```bash
-   python modelTraining.py
-   ```
+To generate visualizations and explore the dataset:
 
-   After training, the model will be saved to a file for later use.
+```bash
+python scripts/run_analysis.py
+```
 
-## Results
+### 2. Model Training
 
-The project evaluates the model using accuracy, precision, recall, and other relevant metrics. The performance of the model on the test set can be visualized using the provided plotting functions.
+To train the skin cancer detection model:
+
+```bash
+python scripts/train_model.py
+```
+
+The model will be saved as `skin_cancer_cnn_model.h5`.
+
+## Dataset
+
+The project uses the **HAM10000** dataset. Ensure the dataset is placed in the `dataset/ham10000` directory and metadata in `dataset/ham10000_metadata.csv` relative to the project root, or update `src/skin_cancer_detection/config.py`.
 
 ## License
 
-This project is licensed under the CC0 1.0 Universal License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- The **HAM10000** dataset creators for providing a comprehensive dataset of dermatoscopic images.
-- The TensorFlow and Keras communities for their excellent deep learning frameworks.
+CC0 1.0 Universal
