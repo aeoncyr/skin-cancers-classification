@@ -5,43 +5,83 @@ import os
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.utils import load_img, img_to_array
-from . import config
+from typing import Tuple, Dict, Any
 
-def load_metadata():
-    """Loads metadata from CSV."""
+from . import config
+from .logger import logger
+
+def load_metadata() -> pd.DataFrame:
+    """
+    Loads metadata from CSV.
+
+    Returns:
+        pd.DataFrame: Loaded metadata dataframe.
+
+    Raises:
+        FileNotFoundError: If the metadata file does not exist.
+    """
     if not os.path.exists(config.METADATA_PATH):
+        logger.error(f"Metadata file not found at {config.METADATA_PATH}")
         raise FileNotFoundError(f"Metadata file not found at {config.METADATA_PATH}")
+    
+    logger.info(f"Loading metadata from {config.METADATA_PATH}")
     return pd.read_csv(config.METADATA_PATH)
 
-def preprocess_metadata(metadata):
+def preprocess_metadata(metadata: pd.DataFrame) -> Tuple[pd.DataFrame, LabelEncoder]:
     """
     Encodes diagnosis labels and adds them to metadata.
-    Returns metadata and the label encoder.
+
+    Args:
+        metadata (pd.DataFrame): Raw metadata.
+    
+    Returns:
+        Tuple[pd.DataFrame, LabelEncoder]: Metadata with 'label' column and the fitted LabelEncoder.
     """
+    logger.info("Preprocessing metadata and encoding labels...")
     le = LabelEncoder()
     metadata['label'] = le.fit_transform(metadata['diagnosis'])
     return metadata, le
 
-def load_and_preprocess_image(img_id, label):
+def load_and_preprocess_image(img_id: tf.Tensor, label: tf.Tensor) -> Tuple[np.ndarray, np.ndarray]:
     """
     Loads and preprocesses a single image.
     Intended to be wrapped in a tf.py_function.
+    
+    Args:
+        img_id (tf.Tensor): Tensor containing the image ID string.
+        label (tf.Tensor): Tensor containing the label.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Preprocessed image array and label.
     """
-    img_id_str = img_id.numpy().decode('utf-8')
-    img_path = os.path.join(config.IMAGE_DIR, img_id_str + '.jpg')
-    
-    # Robust check or just let it fail/handle?
-    # TF data pipeline might prefer it to fail specific way or supply empty.
-    # For now, following original logic but using config constants.
-    
-    image = load_img(img_path, target_size=config.IMG_SIZE)
-    image = img_to_array(image)
-    image = image / 255.0  # Normalize to [0,1]
+    try:
+        img_id_str = img_id.numpy().decode('utf-8')
+        img_path = os.path.join(config.IMAGE_DIR, img_id_str + '.jpg')
+        
+        image = load_img(img_path, target_size=config.IMG_SIZE)
+        image = img_to_array(image)
+        image = image / 255.0  # Normalize to [0,1]
+    except Exception as e:
+        # TF data pipeline relies on this functioning correctly.
+        # Returning zeros might be a safe fallback or letting it crash depends on design.
+        # For now, we log exception but we must return something matching the signature.
+        # ideally we should filter these out beforehand.
+        logger.warning(f"Error loading image {img_id}: {e}")
+        image = np.zeros(config.IMG_SIZE + (3,), dtype=np.float32)
     
     return image, label
 
-def load_and_preprocess_image_tf(img_id, label):
-    """Wrapper for TensorFlow dataset mapping."""
+def load_and_preprocess_image_tf(img_id: tf.Tensor, label: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
+    """
+    Wrapper for TensorFlow dataset mapping.
+
+    Args:
+        img_id (tf.Tensor): Image ID.
+        label (tf.Tensor): Label.
+
+    Returns:
+        Tuple[tf.Tensor, tf.Tensor]: Typed image and label tensors.
+    """
     image, label = tf.py_function(
         func=load_and_preprocess_image, 
         inp=[img_id, label], 
@@ -51,8 +91,17 @@ def load_and_preprocess_image_tf(img_id, label):
     label.set_shape([])
     return image, label
 
-def create_dataset(metadata):
-    """Creates a basic tf.data.Dataset from metadata."""
+def create_dataset(metadata: pd.DataFrame) -> tf.data.Dataset:
+    """
+    Creates a basic tf.data.Dataset from metadata.
+    
+    Args:
+        metadata (pd.DataFrame): Metadata with 'isic_id' and 'label'.
+
+    Returns:
+        tf.data.Dataset: The created dataset.
+    """
+    logger.info("Creating TensorFlow dataset...")
     image_labels_ds = tf.data.Dataset.from_tensor_slices((
         metadata['isic_id'].values,
         metadata['label'].values.astype(np.int32)
@@ -64,8 +113,13 @@ def create_dataset(metadata):
     )
     return dataset
 
-def get_data_augmentation_layer():
-    """Returns the data augmentation sequential model."""
+def get_data_augmentation_layer() -> tf.keras.Sequential:
+    """
+    Returns the data augmentation sequential model.
+
+    Returns:
+        tf.keras.Sequential: Data augmentation layers.
+    """
     return tf.keras.Sequential([
         tf.keras.layers.RandomFlip("horizontal"),
         tf.keras.layers.RandomRotation(0.3),
@@ -75,10 +129,18 @@ def get_data_augmentation_layer():
         tf.keras.layers.RandomTranslation(0.2, 0.2),
     ])
 
-def prepare_datasets(metadata, dataset):
+def prepare_datasets(metadata: pd.DataFrame, dataset: tf.data.Dataset) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
     """
     Splits dataset into train, val, test and applies batching/prefetching.
+
+    Args:
+        metadata (pd.DataFrame): Metadata for calculating sizes.
+        dataset (tf.data.Dataset): The base dataset.
+
+    Returns:
+        Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]: (train_ds, val_ds, test_ds)
     """
+    logger.info("Splitting dataset into train, validation, and test sets...")
     train_size = int(0.8 * len(metadata))
     val_size = int(0.1 * len(metadata))
     
@@ -93,13 +155,23 @@ def prepare_datasets(metadata, dataset):
 
     return train_dataset, val_dataset, test_dataset
 
-def calculate_class_weights(metadata):
-    """Calculates class weights to handle imbalance."""
-    # Assuming 'label' column exists
+def calculate_class_weights(metadata: pd.DataFrame) -> Dict[int, float]:
+    """
+    Calculates class weights to handle imbalance.
+    
+    Args:
+        metadata (pd.DataFrame): Metadata with 'label'.
+
+    Returns:
+        Dict[int, float]: Dictionary mapping class indices to weights.
+    """
+    logger.info("Calculating class weights...")
     all_labels = metadata['label'].values
     class_weights = compute_class_weight(
         class_weight='balanced',
         classes=np.unique(all_labels),
         y=all_labels
     )
-    return {i: weight for i, weight in enumerate(class_weights)}
+    weights_dict = {i: weight for i, weight in enumerate(class_weights)}
+    logger.info(f"Class weights: {weights_dict}")
+    return weights_dict

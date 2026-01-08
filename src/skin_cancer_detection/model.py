@@ -4,9 +4,16 @@ from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.regularizers import l2
 from . import config
+from .logger import logger
 
-def create_base_model():
-    """Creates the base MobileNetV2 model."""
+def create_base_model() -> tf.keras.Model:
+    """
+    Creates the base MobileNetV2 model.
+
+    Returns:
+        tf.keras.Model: Pre-trained MobileNetV2 model (frozen).
+    """
+    logger.info("Initializing MobileNetV2 base model...")
     base_model = MobileNetV2(
         input_shape=config.IMG_SIZE + (3,), 
         include_top=False, 
@@ -15,10 +22,19 @@ def create_base_model():
     base_model.trainable = False
     return base_model
 
-def create_model(learning_rate=config.LEARNING_RATE, dropout_rate=config.DROPOUT_RATE, num_classes=config.NUM_CLASSES):
+def create_model(learning_rate: float = config.LEARNING_RATE, dropout_rate: float = config.DROPOUT_RATE, num_classes: int = config.NUM_CLASSES) -> tf.keras.Model:
     """
     Creates and compiles the CNN model.
+
+    Args:
+        learning_rate (float): Learning rate for the optimizer.
+        dropout_rate (float): Dropout rate.
+        num_classes (int): Number of output classes.
+
+    Returns:
+        tf.keras.Model: Compiled Keras model.
     """
+    logger.info(f"Building model with LR={learning_rate}, Dropout={dropout_rate}, Classes={num_classes}")
     base_model = create_base_model()
     
     model = Sequential([
@@ -36,4 +52,5 @@ def create_model(learning_rate=config.LEARNING_RATE, dropout_rate=config.DROPOUT
         loss='sparse_categorical_crossentropy', 
         metrics=['accuracy']
     )
+    logger.info("Model compiled successfully.")
     return model

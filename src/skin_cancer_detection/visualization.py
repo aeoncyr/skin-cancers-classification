@@ -4,9 +4,17 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 import os
+from typing import Optional
+from .logger import logger
 
-def plot_class_distribution(metadata):
-    """Plots the count of each lesion type."""
+def plot_class_distribution(metadata: pd.DataFrame) -> None:
+    """
+    Plots the count of each lesion type.
+
+    Args:
+        metadata (pd.DataFrame): Metadata dataframe.
+    """
+    logger.info("Plotting class distribution...")
     plt.figure(figsize=(10, 6))
     sns.countplot(x='diagnosis', data=metadata)
     plt.title('Distribution of Lesion Types')
@@ -15,38 +23,55 @@ def plot_class_distribution(metadata):
     plt.xticks(rotation=45)
     plt.show()
 
-def plot_sample_images(metadata, image_dir):
-    """Plots a sample image from each class."""
+def plot_sample_images(metadata: pd.DataFrame, image_dir: str) -> None:
+    """
+    Plots a sample image from each class.
+
+    Args:
+        metadata (pd.DataFrame): Metadata dataframe.
+        image_dir (str): Directory containing images.
+    """
+    logger.info("Plotting sample images...")
     classes = metadata['diagnosis'].unique()
     n_classes = len(classes)
 
     plt.figure(figsize=(15, 15))
 
     for i, c in enumerate(classes):
-        image_path = metadata[metadata['diagnosis'] == c]['isic_id'].iloc[0]
-        img_full_path = os.path.join(image_dir, image_path + '.jpg')
-        
-        if os.path.exists(img_full_path):
-            img = Image.open(img_full_path)
-            plt.subplot(1, n_classes, i + 1)
-            plt.imshow(img)
-            plt.title(c)
-            plt.axis('off')
-        else:
-            print(f"Warning: Image not found at {img_full_path}")
+        try:
+            image_path = metadata[metadata['diagnosis'] == c]['isic_id'].iloc[0]
+            img_full_path = os.path.join(image_dir, image_path + '.jpg')
+            
+            if os.path.exists(img_full_path):
+                img = Image.open(img_full_path)
+                plt.subplot(1, n_classes, i + 1)
+                plt.imshow(img)
+                plt.title(c)
+                plt.axis('off')
+            else:
+                logger.warning(f"Image not found at {img_full_path}")
+        except Exception as e:
+            logger.error(f"Error plotting sample for class {c}: {e}")
 
     plt.tight_layout()
     plt.show()
 
-def plot_image_size_distribution(metadata, image_dir):
-    """Plots the distribution of image widths, heights, and aspect ratios."""
+def plot_image_size_distribution(metadata: pd.DataFrame, image_dir: str) -> None:
+    """
+    Plots the distribution of image widths, heights, and aspect ratios.
+
+    Args:
+        metadata (pd.DataFrame): Metadata dataframe.
+        image_dir (str): Image directory.
+    """
+    logger.info("Analyzing image size distribution...")
     image_sizes = []
     aspect_ratios = []
-
-    # Limit to a subset if dataset is huge, but here we process all for accuracy
-    # or maybe sample first 1000 for speed if needed. 
-    # For now, let's process all as in original script, but robustly check existence.
     
+    # Process only first 1000 to be faster if dataset is large, or all if feasible.
+    # Sticking to all for now but careful of perf.
+    
+    count = 0 
     for isic_id in metadata['isic_id']:
         img_path = os.path.join(image_dir, isic_id + '.jpg')
         if os.path.exists(img_path):
@@ -54,9 +79,13 @@ def plot_image_size_distribution(metadata, image_dir):
                 width, height = img.size
                 image_sizes.append((width, height))
                 aspect_ratios.append(width / height)
+                count += 1
+        
+        # Optional: Break if too many for quick analysis
+        # if count > 1000: break 
 
     if not image_sizes:
-        print("No images found to analyze sizes.")
+        logger.warning("No images found to analyze sizes.")
         return
 
     image_sizes_df = pd.DataFrame(image_sizes, columns=['Width', 'Height'])
@@ -78,8 +107,14 @@ def plot_image_size_distribution(metadata, image_dir):
     plt.tight_layout()
     plt.show()
 
-def plot_age_distribution(metadata):
-    """Plots the distribution of patient ages."""
+def plot_age_distribution(metadata: pd.DataFrame) -> None:
+    """
+    Plots the distribution of patient ages.
+
+    Args:
+        metadata (pd.DataFrame): Metadata dataframe.
+    """
+    logger.info("Plotting age distribution...")
     plt.figure(figsize=(10, 5))
     sns.histplot(metadata['age_approx'], bins=30, kde=True)
     plt.title('Distribution of Age')
@@ -87,8 +122,14 @@ def plot_age_distribution(metadata):
     plt.ylabel('Count')
     plt.show()
 
-def plot_gender_distribution(metadata):
-    """Plots the distribution of gender."""
+def plot_gender_distribution(metadata: pd.DataFrame) -> None:
+    """
+    Plots the distribution of gender.
+
+    Args:
+        metadata (pd.DataFrame): Metadata dataframe.
+    """
+    logger.info("Plotting gender distribution...")
     plt.figure(figsize=(5, 5))
     sns.countplot(x='sex', data=metadata)
     plt.title('Distribution of Gender')
@@ -96,9 +137,14 @@ def plot_gender_distribution(metadata):
     plt.ylabel('Count')
     plt.show()
 
-def plot_correlation_matrix(metadata):
-    """Plots the correlation matrix of numeric features."""
-    # Handle missing values temporarily for visualization
+def plot_correlation_matrix(metadata: pd.DataFrame) -> None:
+    """
+    Plots the correlation matrix of numeric features.
+
+    Args:
+        metadata (pd.DataFrame): Metadata dataframe.
+    """
+    logger.info("Plotting correlation matrix...")
     meta_copy = metadata.copy()
     if 'age_approx' in meta_copy.columns:
         meta_copy['age_approx'] = meta_copy['age_approx'].fillna(meta_copy['age_approx'].median())
@@ -110,35 +156,25 @@ def plot_correlation_matrix(metadata):
     plt.title('Correlation Matrix of Numeric Features')
     plt.show()
 
-def plot_pairplot(metadata):
-    """Plots pairplot to explore relationships."""
-    # Filter for relevant columns to avoid clutter
-    cols = ['age_approx', 'diagnosis'] # Minimal set
-    # Using original logic
+def plot_pairplot(metadata: pd.DataFrame) -> None:
+    """
+    Plots pairplot to explore relationships.
+
+    Args:
+        metadata (pd.DataFrame): Metadata dataframe.
+    """
+    logger.info("Plotting pairplot...")
     sns.pairplot(metadata, hue='diagnosis', vars=['age_approx'], palette='husl')
     plt.show()
 
-def plot_age_distribution_by_diagnosis(metadata):
-    """Plots KDE of age distribution for each diagnosis."""
-    plt.figure(figsize=(10, 5))
-    for dx_type in metadata['diagnosis'].unique():
-        subset = metadata[metadata['diagnosis'] == dx_type]
-        if len(subset) > 1: # KDE needs at least 2 points
-             sns.kdeplot(subset['age_approx'], limit=None, label=dx_type) # limit arg is deprecated or warned in some versions, check usage
-             # actually safely:
-             try:
-                sns.kdeplot(subset['age_approx'], label=dx_type)
-             except Exception as e:
-                 print(f"Could not plot KDE for {dx_type}: {e}")
+def plot_training_history(history: tf.keras.callbacks.History) -> None:
+    """
+    Plots accuracy and loss from training history.
 
-    plt.title('Age Distribution Across Lesion Types')
-    plt.xlabel('Age')
-    plt.ylabel('Density')
-    plt.legend()
-    plt.show()
-
-def plot_training_history(history):
-    """Plots accuracy and loss from training history."""
+    Args:
+        history (tf.keras.callbacks.History): Training history object.
+    """
+    logger.info("Plotting training history...")
     plt.figure(figsize=(12, 4))
 
     plt.subplot(1, 2, 1)
